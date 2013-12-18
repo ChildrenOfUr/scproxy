@@ -1,7 +1,6 @@
 name: scproxy
-version: 0.0.1
+version: 1.0.0
 author: Paul VanKeuren <paul.vankeuren@gmail.com>
 description: A simple proxy that allows you to use the soundcloud api from dart.
 dependencies:
   browser: any
-  observe: any
