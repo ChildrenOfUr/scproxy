@@ -1,11 +1,14 @@
 library scproxy;
 import 'dart:js';
+import 'dart:html';
 import 'dart:async';
+import 'dart:convert';
 
 class SCsound {
   JsObject _proxy;
-  StreamController _state = new StreamController();
-  SCsound(this._proxy){}
+  Map meta;
+  SCsound(this._proxy){
+  }
 
   
   play(){
@@ -52,7 +55,16 @@ class SCproxy {
     var completer = new Completer();
     
     context['SC'].callMethod('stream', [track_id, (sound) {
-     sounds[name] = new SCsound(sound);
+      
+     HttpRequest.getString('http://api.soundcloud.com/tracks/124082151.json?client_id=' + client_id)
+         .then((json){
+           sounds[name] = new SCsound(sound);
+           sounds[name].meta = JSON.decode(json);           
+         });      
+
+     
+     
+     
      Timer T;
      T = new Timer.periodic(new Duration(seconds : 1), 
         (_)  {

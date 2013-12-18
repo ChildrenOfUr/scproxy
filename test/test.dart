@@ -7,8 +7,7 @@ main() {
   .then((_)
       {
     SCsound firebog = SC.sounds['firebog'];
-    firebog.volume(10);
+    firebog.volume(50);
+    print(firebog.meta);
       });
-  
-
 }
