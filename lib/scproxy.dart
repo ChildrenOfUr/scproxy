@@ -1,100 +1,84 @@
 library scproxy;
-import 'dart:js';
 import 'dart:html';
 import 'dart:async';
 import 'dart:convert';
 
-class SCsound {
-  JsObject _proxy;
+class Scound {
+  AudioElement _sound;
   Map meta;
   
   bool paused = false;
   bool muted = false;
-  bool repeat = false;
   bool _stopped = false;
   
-  StreamController _playController;
   Stream onPlay;
-  StreamController _stopController;
+  StreamController _stopController = new StreamController();
   Stream onStop;
-  StreamController _doneController;
-  Stream onDone;
-  StreamController _pauseController;
+  Stream onEnded;
   Stream onPause;
-  StreamController _resumeController;
+  StreamController _resumeController = new StreamController();
   Stream onResume;
   
-  SCsound(this._proxy){
-    _playController = new StreamController();
-    onPlay = _playController.stream;
-    
-    _stopController = new StreamController();
-    onStop = _stopController.stream;    
-    
-    _doneController = new StreamController();
-    onDone = _doneController.stream; 
-    
-    _pauseController = new StreamController();
-    onPause = _pauseController.stream; 
-    
-    _resumeController = new StreamController();
-    onResume = _resumeController.stream; 
+  Scound(this._sound, this.meta){
+    onPlay = _sound.onPlay;
+    onStop = _stopController.stream;        
+    onEnded = _sound.onEnded;     
+    onPause = _sound.onPause;    
+    onResume = _resumeController.stream;    
   }
   
   // methods act on the sound object and trigger relevant events.
-  
   play(){
-    if (_stopped == false)
-      _proxy.callMethod('stop');
     _stopped = false;
-    Timer t = new Timer(new Duration(milliseconds: meta['duration']),() 
-        {
-      if (repeat == true && _stopped == false)
-        play();
-      _doneController.add(null);
-      });
-    _proxy.callMethod('play');
-    _playController.add(null);
+    _sound.play();
   }
   
-  stop(){
-    _stopped = true;
-    _proxy.callMethod('stop');
-    _stopController.add(null);
+  loop(bool value){
+    _sound.loop = value;
   }
+  /* // at the moment there is a 'currentTime' problem
+  *stop(){
+  *  _stopped = true;
+  * _sound.pause();
+  * _sound.currentTime = 0;
+  *  _stopController.add(null);
+  *}
+  */
   pause(){
-    _proxy.callMethod('pause');
+    _sound.pause();
     paused = true;
-    _pauseController.add(null);
+    
   }
   resume(){
-    _proxy.callMethod('resume');
+    _sound.play();
     paused = false;
     _resumeController.add(null);
   }
   togglePause(){
-    _proxy.callMethod('togglePause');
     if (paused == true)
-    paused = false;
+    resume();
     else
-    paused = true;
+    pause();
   }
-  volume(int value){// takes values 0 to 100
-    _proxy.callMethod('setVolume', [value]);
+  
+  //takes values 0 to 100
+  //converts to a value between 0.0 and 1.0
+  volume(int value){
+    _sound.volume = value/100; //int divided by int is a double in Dart
   }
   setPan(int value){// takes values -100 to 100
-    _proxy.callMethod('setPan', [value]);
+   
   }
   mute(){
-    _proxy.callMethod('mute');
+    _sound.muted = true;
     muted = true;
   }
   unmute(){
-    _proxy.callMethod('unmute');
+    _sound.muted = false;
     muted = false;
   }
   toggleMute(){
-    _proxy.callMethod('toggleMute');
+   
     if (muted == true)
     muted = false;
     else
@@ -102,56 +86,36 @@ class SCsound {
   }
   
   // Destroy the sound object,and close all the event listeners
-  destruct(){
-    _proxy.callMethod('destruct');
-    _playController.close();  
-    _stopController.close();  
-    _doneController.close();   
-    _pauseController.close();
-    
+  remove(){
+    _sound.remove();
+    _stopController.close();
+    _resumeController.close();
   }
 
 }
 
-class SCproxy {
-  String client_id;
-  String redirect_uri;
-  
-  SCproxy(this.client_id) {
-    context['SC'].callMethod('initialize',
-        [
-         new JsObject.jsify({
-           "client_id" : client_id           
-         })         
-         ]);
-  } 
+class SC {
+  String client_id;  
+  SC(this.client_id) {} 
   
   
-  Future <SCsound> load(String track_id){ 
-    var completer = new Completer();
-    SCsound newSound;
+  Future <Scound> load(String track_id){ 
+    Completer completer = new Completer();
+    Scound newScound;
+    Map newMeta;  
+    AudioElement newAudio;
     
-    // set up the proxy sound 
-    context['SC'].callMethod('stream', [track_id, (sound) {
-      newSound = new SCsound(sound);
-      
       // Get the metadata for the sound
-      HttpRequest.getString('http://api.soundcloud.com'+ track_id +'.json?client_id=' + client_id)
+      HttpRequest.getString('http://api.soundcloud.com'+ track_id +'.json?client_id=$client_id')
         .then((json){
-          newSound.meta = JSON.decode(json);           
-        });   
-      
-      
-      // Continually checks if the soundmanager2 object is ready, then returns a proxy SCsound.
-      Timer T;
-      T = new Timer.periodic(new Duration(milliseconds : 100), 
-          (_)  {
-        if (newSound._proxy is JsObject && newSound.meta != null)
-        {completer.complete(newSound);T.cancel();}
+          newMeta = JSON.decode(json);
+          
+       // Create and load the audio element
+          newAudio = document.body.append(new AudioElement(newMeta['stream_url'] + '?client_id=$client_id'));
+          newAudio.load();
+          // Return the new Scound
+          completer.complete(new Scound(newAudio,newMeta));
         });
-      
-   }]);
-   
-    return completer.future; 
+    return completer.future;
   }
 }
