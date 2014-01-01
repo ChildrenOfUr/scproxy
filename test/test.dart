@@ -7,7 +7,13 @@ main() {
   .then((s) 
       {
     s.play();
-    document.onClick.listen((_) => s.play());
+    document.onClick.listen((MouseEvent event) 
+		{
+			if(event.shiftKey)
+				s.stop();
+			else
+				s.play();
+		});
       })
 
   .catchError((err) => print(err));
