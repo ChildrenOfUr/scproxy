@@ -9,9 +9,6 @@ main() {
     s.play();
     document.onClick.listen((MouseEvent event) 
 		{
-			if(event.shiftKey)
-				s.stop();
-			else
 				s.play();
 		});
       })
