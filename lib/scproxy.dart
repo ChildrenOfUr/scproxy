@@ -5,6 +5,7 @@ import 'dart:convert';
 
 class Scound {
   AudioElement _sound;
+  String streamingUrl;
   Map meta;
   
   bool paused = false;
@@ -20,6 +21,7 @@ class Scound {
   Stream onResume;
   
   Scound(this._sound, this.meta){
+	streamingUrl = _sound.src;
     onPlay = _sound.onPlay;
     onStop = _stopController.stream;        
     onEnded = _sound.onEnded;     
