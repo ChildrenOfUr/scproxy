@@ -108,7 +108,7 @@ class SC {
     AudioElement newAudio;
     
       // Get the metadata for the sound
-      HttpRequest.getString('http://api.soundcloud.com'+ track_id +'.json?client_id=$client_id')
+      HttpRequest.getString('https://api.soundcloud.com'+ track_id +'.json?client_id=$client_id')
         .then((json){
           newMeta = JSON.decode(json);
           
